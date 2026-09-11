@@ -24,29 +24,40 @@ const ROOT = resolve(__dirname, '..');
 // ---- env loader ----
 
 function loadEnv() {
+  const env = { ...process.env };
+
   const envPath = resolve(ROOT, '.env');
-  let content;
+
   try {
-    content = readFileSync(envPath, 'utf-8');
+    const content = readFileSync(envPath, 'utf-8');
+
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+
+      if (!trimmed || trimmed.startsWith('#')) continue;
+
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx === -1) continue;
+
+      const key = trimmed.slice(0, eqIdx).trim();
+      const value = trimmed.slice(eqIdx + 1).trim();
+
+      if (!env[key]) env[key] = value;
+    }
   } catch {
-    console.error('❌ .env file not found. Copy .env.example to .env and fill in your values.');
-    process.exit(1);
+    // .env tidak wajib di Cloudflare
   }
 
-  const env = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx === -1) continue;
-    env[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
-  }
+  const required = [
+    'CLOUDFLARE_API_TOKEN',
+    'CLOUDFLARE_ACCOUNT_ID',
+    'DOMAINS',
+    'WEB_HOST',
+  ];
 
-  // Validate required
-  const required = ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID', 'DOMAINS', 'WEB_HOST'];
   for (const key of required) {
     if (!env[key] || env[key].startsWith('YOUR_')) {
-      console.error(`❌ ${key} is required in .env`);
+      console.error(`❌ ${key} is required in environment variables`);
       process.exit(1);
     }
   }
