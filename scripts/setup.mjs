@@ -79,6 +79,7 @@ function apiHeaders(token) {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
+  
 }
 
 async function fetchJson(url, opts = {}) {
